@@ -12,18 +12,24 @@ const client = require('../config/elastic');
 //     return result.hits.hits;
 // }
 async function searchQuery(query) {
-  const result = await client.search({
-    index: 'pages',
-    query: {
-      multi_match: {
-        query: query,
-        fields: ['title', 'content']
+  try {
+    const result = await client.search({
+      index: 'pages',
+      query: {
+        multi_match: {
+          query: query,
+          fields: ['title', 'content']
+        }
       }
-    }
-  });
+    });
+    return result.hits.hits.map(hit => hit._source);
+  } catch (err) {
+    // if (err.meta?.body?.error?.type === "index_not_found_exception") {
+    //   return [];
+    // }
+    next(err);
+  }
 
-
-  return result.hits.hits.map(hit => hit._source);
 }
 
 async function indexDocument(doc) {
