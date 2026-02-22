@@ -11,6 +11,18 @@ const client = require('../config/elastic');
 //     });
 //     return result.hits.hits;
 // }
+
+async function deleteById({id, index}) {
+  try {
+    const result = await client.delete({
+      id, index
+    })
+    return result;
+  } catch (err) {
+    throw err;
+  }
+}
+
 async function searchQuery(query) {
   try {
     const result = await client.search({
@@ -24,10 +36,10 @@ async function searchQuery(query) {
     });
     return result.hits.hits.map(hit => hit._source);
   } catch (err) {
-    // if (err.meta?.body?.error?.type === "index_not_found_exception") {
-    //   return [];
-    // }
-    next(err);
+    if (err.meta?.body?.error?.type === "index_not_found_exception") {
+      return [];
+    }
+    // next(err);
   }
 
 }
@@ -40,4 +52,4 @@ async function indexDocument(doc) {
   });
 }
 
-module.exports = { searchQuery, indexDocument };
+module.exports = { searchQuery, indexDocument, deleteById };
