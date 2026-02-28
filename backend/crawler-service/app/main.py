@@ -1,15 +1,16 @@
 from app.crawler import fetch_page
 from app.extractor import extract_data
-# from app.db import get_connection
+from app.db import get_connection, insert_crawl_record
 
 def run(url):
-    result = fetch_page(url)
+    # add basic info of crawled pages
+    conn = get_connection()
+    insert_crawl_record(conn, url)
+    
+    # crawl page
+    result = fetch_page(url)    
 
-    if not result or result["status_code"] !=200:
-        print("Failed to get result")
-        return
-    print("Status Code:", result["status_code"])
-    print("HTML length:", len(result["html"]))
+    # extract crawled page data
     data = extract_data(url, result["html"])
     print(data)
 
