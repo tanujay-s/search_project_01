@@ -1,5 +1,6 @@
 import psycopg2
 from app.config import DB_CONFIG
+import json
 
 def get_connection():
     try:
@@ -38,7 +39,7 @@ def update_page_content(conn, data, status):
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                UPDATE crawled_pges
+                UPDATE crawled_pages
                 SET status = %s,
                     title = %s,
                     meta_description = %s,
@@ -49,7 +50,8 @@ def update_page_content(conn, data, status):
                 """,
                 (status, 
                  data["title"], data["meta_description"],
-                 data["content"], data["h1_tags"],  
+                 data["content"], 
+                 json.dumps(data["h1_tags"]),
                  data["url"])
             )
         conn.commit()
@@ -57,3 +59,22 @@ def update_page_content(conn, data, status):
     except Exception as e:
         conn.rollback()
         print(e)
+
+def get_page_status(conn, url):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT status
+                FROM crawled_pages
+                WHERE url = %s
+                """,
+                (url,)
+            )
+
+            row = cursor.fetchone()
+            return row[0] if row else None
+
+    except Exception as e:
+        print( e)
+        return None
