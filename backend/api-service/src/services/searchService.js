@@ -30,11 +30,25 @@ async function searchQuery(query) {
       query: {
         multi_match: {
           query: query,
-          fields: ['title', 'content']
+          fields: ['title^3', 'content'],
+          fuzziness: "AUTO"
+        }
+      },
+      highlight: {
+        fields: {
+          content: {}
         }
       }
     });
-    return result.hits.hits.map(hit => hit._source);
+    // return result.hits.hits.map(hit => hit._source);
+    return result.hits.hits.map(hit => ({
+      id: hit._id,
+      score: hit._score,
+      title: hit._source.title,
+      url: hit._source.url,
+      snippet: hit.highlight?.content?.[0] ||
+        hit._source.content.substring(0, 200)
+    }));
   } catch (err) {
     if (err.meta?.body?.error?.type === "index_not_found_exception") {
       return [];
@@ -44,11 +58,11 @@ async function searchQuery(query) {
 
 }
 
-async function indexDocument(doc) {
+async function indexDocument(id, doc) {
   await client.index({
     index: 'pages',
-    document: doc,
-    refresh: true
+    id: id,
+    document: doc
   });
 }
 

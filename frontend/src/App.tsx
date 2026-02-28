@@ -1,9 +1,12 @@
 import { useState } from "react";
 
 type SearchResult = {
+  id: string;
+  score: number;
   title: string;
-  content: string;
-}
+  url: string;
+  snippet: string;
+};
 
 function App(){
   const [query, setQuery] = useState("");
@@ -54,8 +57,26 @@ function App(){
               borderRadius: "6px"
             }}
           >
-            <h3>{item.title}</h3>
-            <p>{item.content}</p>
+            <h3>
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#1a0dab", textDecoration: "none" }}
+              >
+                {item.title}
+              </a>
+            </h3>
+
+            <p
+              dangerouslySetInnerHTML={{
+                __html: item.snippet
+              }}
+            />
+
+            <small style={{ color: "gray" }}>
+              Score: {item.score.toFixed(2)}
+            </small>
           </div>
         ))}
       </div>

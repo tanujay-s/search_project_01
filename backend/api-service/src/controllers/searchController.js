@@ -1,4 +1,4 @@
-const { searchQuery, indexDocument, deleteById } = require('../services/searchService');
+const { searchQuery, deleteById } = require('../services/searchService');
 
 async function search(req, res, next) {
     try {
@@ -14,16 +14,6 @@ async function search(req, res, next) {
     }
 }
 
-async function index(req, res, next) {
-  try {
-    await indexDocument(req.body);
-    res.json({ message: "Document indexed" });
-  } catch (err) {
-    // res.status(500).json({ error: err.message });
-    next(err);
-  }
-}
-
 async function deleteIndex(req, res, next) {
   try {
     await deleteById(req.body);
@@ -33,4 +23,4 @@ async function deleteIndex(req, res, next) {
   }
 }
 
-module.exports = { search, index, deleteIndex };
+module.exports = { search, deleteIndex };
