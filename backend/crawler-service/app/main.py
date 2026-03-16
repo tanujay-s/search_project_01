@@ -4,29 +4,44 @@ from app.db import (
     get_connection,
     insert_crawl_record,
     update_page_content,
-    get_page_status
+    get_pending_link,
+    mark_crawling,
+    mark_done,
+    insert_new_link
 )
 
-def run(url):
+
+def crawl_next():
+
     conn = get_connection()
     if not conn:
         print("DB connection failed")
         return
 
-    existing_status = get_page_status(conn, url)
-    if existing_status == "completed":
-        print("Page is alerady added: ", url)
+    # get next pending link
+    row = get_pending_link(conn)
+
+    if not row:
+        print("No pending links")
         conn.close()
         return
 
-    # add basic info of crawled pages
+    link_id, url, depth = row
+
+    print("Crawling:", url)
+
+    mark_crawling(conn, link_id)
+
+    # insert into crawled_pages
     insert_crawl_record(conn, url)
-    
-    # crawl page
+
+    # fetch page
     result = fetch_page(url)
 
     if not result or result["status_code"] != 200:
+
         print("Fetch failed")
+
         update_page_content(conn, {
             "url": url,
             "title": "",
@@ -34,18 +49,30 @@ def run(url):
             "content": "",
             "h1_tags": []
         }, "failed")
-        conn.close()
-        return    
 
-    # extract crawled page data
+        mark_done(conn, link_id)
+        conn.close()
+        return
+
+    # extract
     data = extract_data(url, result["html"])
-    
-    # store whole data after extracting it in diff parts 
+
     update_page_content(conn, data, "completed")
+
+    # recursive crawling
+    MAX_DEPTH = 2
+
+    if depth < MAX_DEPTH:
+        for link in data["links"]:
+            insert_new_link(conn, link, depth + 1, url)
+
+    # mark done in queue
+    mark_done(conn, link_id)
 
     conn.close()
 
-if __name__ == "__main__":
-    test_url = "https://www.geeksforgeeks.org/python/command-line-interface-programming-python/"
-    run(test_url)
 
+if __name__ == "__main__":
+
+    while True:
+        crawl_next()

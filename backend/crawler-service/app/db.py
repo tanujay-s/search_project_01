@@ -78,3 +78,77 @@ def get_page_status(conn, url):
     except Exception as e:
         print( e)
         return None
+
+def get_pending_link(conn):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, url, depth
+                FROM links_to_crawl
+                WHERE status = 'pending'
+                ORDER BY id
+                LIMIT 1
+                """
+            )
+            row = cursor.fetchone()
+            return row if row else None
+    except Exception as e:
+        print(e)
+        return None
+    
+def mark_crawling(conn, link_id):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE links_to_crawl
+                SET status = 'crawling'
+                WHERE id = %s
+                """,
+                (link_id,)
+            )
+
+        conn.commit()
+        print("Crawling marked for id:", link_id)
+
+    except Exception as e:
+        conn.rollback()
+        print(e)
+
+def mark_done(conn, link_id):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE links_to_crawl
+                SET status = 'done'
+                WHERE id = %s
+                """,
+                (link_id,)
+            )
+        conn.commit()
+        print("Updated crawled status completed of id: ", link_id)
+    
+    except Exception as e:
+        conn.rollback()
+        print(e)
+
+def insert_new_link(conn, url, depth, from_url):
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO links_to_crawl (url, depth, discovered_from, status)
+                VALUES (%s, %s, %s, 'pending')
+                ON CONFLICT (url) DO NOTHING
+                """,
+                (url, depth, from_url)
+            )
+
+        conn.commit()
+        print("Inserted new link:", url)
+
+    except Exception as e:
+        conn.rollback()
+        print(e)
