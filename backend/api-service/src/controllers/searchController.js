@@ -2,9 +2,16 @@ const { searchQuery, deleteById } = require('../services/searchService');
 
 async function search(req, res, next) {
     try {
-        const q = req.query.q;
+        const {q, page = 1, limit = 10} = req.query;
         console.log(q);
-        const result = await searchQuery(q);
+
+        if(!q) {
+          res.status(400).json({message: "Search string is required"});
+        }
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+
+        const result = await searchQuery(q, pageNum, limitNum);
 
         res.json(result);
 

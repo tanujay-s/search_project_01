@@ -4,6 +4,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const morgan = require("morgan");
 const pool  = require('./config/db');
+const variedRoutes = require('./routes/variedRoutes');
 
 const app = express();
 app.use(cors());
@@ -16,6 +17,8 @@ pool.query("SELECT NOW()")
     .catch(console.error);
 
 app.use('/api', searchRoutes);
+
+app.use('/varied', variedRoutes);
 
 app.use(errorHandler);
 

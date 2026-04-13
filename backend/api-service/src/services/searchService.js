@@ -23,15 +23,38 @@ async function deleteById({id, index}) {
   }
 }
 
-async function searchQuery(query) {
+async function searchQuery(query, page = 1, limit = 10) {
   try {
+    const from = (page - 1) * limit;
+
     const result = await client.search({
       index: 'pages',
+      from,
+      size: limit,
       query: {
-        multi_match: {
-          query: query,
-          fields: ['title^3', 'content'],
-          fuzziness: "AUTO"
+        bool: {
+          should: [
+            {
+              match_phrase: {
+                title: { query, boost: 6 }
+              }
+            },
+            {
+              match: {
+                title: { query, boost: 4, fuzziness: "AUTO" }
+              }
+            },
+            {
+              match: {
+                h1_tags: { query, boost: 3 }
+              }
+            },
+            {
+              match: {
+                content: { query, fuzziness: "AUTO" }
+              }
+            }
+          ]
         }
       },
       highlight: {
@@ -40,22 +63,30 @@ async function searchQuery(query) {
         }
       }
     });
-    // return result.hits.hits.map(hit => hit._source);
-    return result.hits.hits.map(hit => ({
-      id: hit._id,
-      score: hit._score,
-      title: hit._source.title,
-      url: hit._source.url,
-      snippet: hit.highlight?.content?.[0] ||
-        hit._source.content.substring(0, 200)
-    }));
+
+    const total = result.hits.total.value;
+
+    return {
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      results: result.hits.hits.map(hit => ({
+        id: hit._id,
+        score: hit._score,
+        title: hit._source.title,
+        url: hit._source.url,
+        snippet:
+          hit.highlight?.content?.[0] ||
+          hit._source.content?.slice(0, 200) + "..."
+      }))
+    };
+
   } catch (err) {
     if (err.meta?.body?.error?.type === "index_not_found_exception") {
-      return [];
+      return { total: 0, page: 1, totalPages: 0, results: [] };
     }
-    // next(err);
+    throw err;
   }
-
 }
 
 async function indexDocument(id, doc) {

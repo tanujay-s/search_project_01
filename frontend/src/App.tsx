@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type SearchResult = {
   id: string;
@@ -8,26 +8,38 @@ type SearchResult = {
   snippet: string;
 };
 
-function App(){
+function App() {
   const [query, setQuery] = useState("");
-
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const handleSearch = async () => {
-    if(!query.trim()) return;
+  const limit = 10;
+
+  const handleSearch = async (pageNumber = 1) => {
+    if (!query.trim()) return;
 
     const res = await fetch(
-    `http://localhost:5001/api/search?q=${query}`
-    )
+      `http://localhost:5001/api/search?q=${encodeURIComponent(query)}&page=${pageNumber}&limit=${limit}`
+    );
+
     const data = await res.json();
-    setResults(data);
+
+    setResults(data.results || []);
+    setTotalPages(data.totalPages || 0);
+    setPage(data.page || 1);
   };
+
+  useEffect(() => {
+    if (query) {
+      handleSearch(page);
+    }
+  }, [page]);
 
   return (
     <div style={{ padding: "40px", fontFamily: "Arial" }}>
       <h2>Search</h2>
 
-      {/* Search Input */}
       <input
         type="text"
         placeholder="Search..."
@@ -37,19 +49,18 @@ function App(){
       />
 
       <button
-        onClick={handleSearch}
+        onClick={() => handleSearch(1)}
         style={{ marginLeft: "10px", padding: "8px 12px" }}
       >
         Search
       </button>
 
-      {/* Results */}
       <div style={{ marginTop: "30px" }}>
         {results.length === 0 && <p>No results</p>}
 
-        {results.map((item, index) => (
+        {results.map((item) => (
           <div
-            key={index}
+            key={item.id}
             style={{
               border: "1px solid #ccc",
               padding: "10px",
@@ -80,9 +91,32 @@ function App(){
           </div>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ marginTop: "20px" }}>
+          <button
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page === 1}
+          >
+            Prev
+          </button>
+
+          <span style={{ margin: "0 10px" }}>
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            onClick={() =>
+              setPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={page === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
-
 }
 
 export default App;
