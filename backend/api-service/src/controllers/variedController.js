@@ -1,4 +1,5 @@
 const { addLinksToDb } = require('../services/variedService');
+const { fetchAndUpdateArticle } = require('../services/trendingService');
 
 async function addLinksToCrawl(req, res, next) {
     try {
@@ -23,4 +24,15 @@ async function addLinksToCrawl(req, res, next) {
     }
 }
 
-module.exports = { addLinksToCrawl };
+async function fetchTrendingArticles(req, res, next) {
+    try {
+        const articles = await fetchAndUpdateArticle();
+
+        res.json(articles);
+
+    } catch (err) {
+        next(err);
+    }
+}
+
+module.exports = { addLinksToCrawl, fetchTrendingArticles };
