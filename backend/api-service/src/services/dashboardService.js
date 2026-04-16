@@ -18,13 +18,33 @@ async function fetchArticlesForDashboard() {
     }
 }
 
+async function fetchReposForDashboard() {
+    try{
+        const result = await pool.query(`
+            SELECT name, full_name, url, stars, description, language
+            FROM trending_repos
+            ORDER BY stars DESC
+            LIMIT 5
+        `);
+
+            // console.log(result);
+
+        return result.rows;
+    } catch(err) {
+        console.error('Error fetchingg latest repos: ', err);
+        return [];
+    }
+}
+
 async function fetchAllDashboardData() {
     try {
         const articles = await fetchArticlesForDashboard();
 
+        const repos = await fetchReposForDashboard();
+
         return {
             latestArticles: articles,
-            trendingRepos: [],
+            trendingRepos: repos,
             notes: [],
             snippets: [],
             savedItems: []
