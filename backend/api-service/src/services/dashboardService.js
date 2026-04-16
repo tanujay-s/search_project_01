@@ -24,6 +24,7 @@ async function fetchAllDashboardData() {
 
         return {
             latestArticles: articles,
+            trendingRepos: [],
             notes: [],
             snippets: [],
             savedItems: []
@@ -33,6 +34,7 @@ async function fetchAllDashboardData() {
         console.error("Error getting dashboard data: ", err);
         return {
             latestArticles: [],
+            trendingRepos: [],
             notes: [],
             snippets: [],
             savedItems: []

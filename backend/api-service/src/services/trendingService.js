@@ -68,4 +68,73 @@ async function fetchAndUpdateArticle() {
     return articles;
 }
 
-module.exports = { fetchAndUpdateArticle };
+async function fetchFromGithub() {
+    try {
+        const res = await fetch("https://api.github.com/search/repositories?q=stars:>10000&sort=stars&order=desc&per_page=5");
+        const data = await res.json();
+        
+        return data.items.map(repo => ({
+            name: repo.name,
+            fullName: repo.full_name,
+            description: repo.description,
+            url: repo.html_url,
+            stars: repo.stargazers_count,
+            language: repo.language
+        }));
+
+    } catch(err){
+        console.log('Error fetching repos from github: ',err);
+        return [];
+    }
+}
+
+async function saveRepos(repos) {
+    try{
+        if(!repos || repos.length == 0) return;
+
+        await pool.query(`DELETE FROM trending_repos`);
+
+        const values = [];
+        const placeholders = [];
+
+        repos.forEach((repo, index) => {
+            const baseIndex = index * 6;
+
+            placeholders.push(
+                `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3},
+                    $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}
+                )`
+            );
+            values.push(
+                repo.name,
+                repo.fullName,
+                repo.description,
+                repo.url,
+                repo.stars,
+                repo.language
+            );
+        });
+
+        const query = `INSERT INTO trending_repos
+            (name, full_name, description, url, stars, language)
+            VALUES ${placeholders.join(",")} 
+            ON CONFLICT (url) DO NOTHING `;
+
+        await pool.query(query, values);
+
+        console.log('Repos table updated');
+        
+    } catch(err) {
+        console.error('Error updating repos db: ', err);
+    }
+}
+
+async function fetchAndUpdateRepos() {
+    const repos = await fetchFromGithub();
+
+    await saveRepos(repos);
+
+    return repos;
+}
+
+module.exports = { fetchAndUpdateArticle, fetchAndUpdateRepos };
